@@ -1,0 +1,155 @@
+// Detect It Easy: detection rule file
+// Author: horsicq <horsicq@gmail.com>, CusDec-dev
+
+// https://www.python.org/
+meta("source", "Python");
+
+function detect() {
+    var sText = Binary.getHeaderString();
+
+    if ((/import\s/.test(sText)) && (/class\s/.test(sText)) && (/self/.test(sText))) {
+        if (/\sdef\s/.test(sText)) {
+            bDetected = true;
+        }
+    }
+
+    // Python Compressor [zlib + codecs]
+    if ((/import\s+.*\bzlib\b/.test(sText) || /from\s+zlib\s+import/.test(sText)) &&
+        (/import\s+.*\bcodecs\b/.test(sText) || /from\s+codecs\s+import/.test(sText)) &&
+        /zlib\.decompress\s*\(/.test(sText) &&
+        /codecs\.decode\s*\(/.test(sText) &&
+        /exec\s*\(/.test(sText) &&
+        /bytes\s*\(\s*b['"]/.test(sText)) {
+
+        bDetected = true;
+        sName = "Python Compressor [zlib+codecs]";
+    }
+
+    // Python Compressor [LZMA]
+    if ((/import\s+.*\blzma\b/.test(sText) || /from\s+lzma\s+import/.test(sText)) &&
+        /lzma\.decompress\s*\(/.test(sText) &&
+        /exec\s*\(/.test(sText)) {
+
+        bDetected = true;
+        sName = "Python Compressor [LZMA]";
+    }
+
+    // Python Compressor [GZIP]
+    if ((/import\s+.*\bgzip\b/.test(sText) || /from\s+gzip\s+import/.test(sText)) &&
+        /gzip\.decompress\s*\(/.test(sText) &&
+        /exec\s*\(/.test(sText)) {
+
+        bDetected = true;
+        sName = "Python Compressor [GZIP]";
+    }
+
+    // Python Compressor [BZ2]
+    if ((/import\s+.*\bbz2\b/.test(sText) || /from\s+bz2\s+import/.test(sText)) &&
+        /bz2\.decompress\s*\(/.test(sText) &&
+        /exec\s*\(/.test(sText)) {
+
+        bDetected = true;
+        sName = "Python Compressor [BZ2]";
+    }
+
+    // Python Compressor [generic]
+    if (/exec\s*\(/.test(sText) &&
+        /(zlib|lzma|gzip|bz2)\.decompress\s*\(/.test(sText) &&
+        /bytes\s*\(\s*b['"]/.test(sText)) {
+
+        bDetected = true;
+        sName = "Python Compressor (generic)";
+    }
+
+    // PyArmor
+    if (/from\s+pyarmor_runtime_[A-Za-z0-9_]+\s+import\s+__pyarmor__/.test(sText) &&
+        /__pyarmor__\s*\(\s*__name__\s*,\s*__file__\s*,\s*b['"]PY[0-9A-Za-z]{6}/.test(sText)) {
+
+        bDetected = true;
+        sName = "PyArmor";
+    }
+
+    // PyObfuscator.com
+    if (/lambda\s+__\s*:\s*__import__\s*\(\s*['"]zlib['"]\s*\)/.test(sText) &&
+        /__import__\s*\(\s*['"]zlib['"]\s*\)\s*\.\s*decompress\s*\(/.test(sText) &&
+        /__import__\s*\(\s*['"]base64['"]\s*\)\s*\.\s*b64decode\s*\(/.test(sText) &&
+        /\[\s*:\s*:\s*-1\s*\]/.test(sText) &&
+        /exec\s*\(\s*\(\s*_\s*\)\s*\(/.test(sText)) {
+
+        bDetected = true;
+        sName = "PyObfuscator.com";
+    }
+
+    // github.com/billythegoat356/Specter
+    if (((/this\s+code\s+has\s+been\s+obfuscated\s+with\s+Specter/i.test(sText) &&
+          /github\.com\/billythegoat356\/Specter/i.test(sText)) ||
+         (/__author__\s*=\s*["']billythegoat356["']/i.test(sText) &&
+          /__github__\s*=\s*["'][^"']*billythegoat356\/Specter["']/i.test(sText))) ||
+        (/exec\s*\(\s*__import__\s*\(\s*['"]marshal['"]\s*\)\s*\.\s*loads\s*\(/i.test(sText) &&
+         /Func\.define\s*\(/i.test(sText))) {
+
+        bDetected = true;
+        sName = "Specter Obfuscator";
+    }
+	
+	// github.com/billythegoat356/Parasite
+    if (/eval\s*\(\s*compile\s*\(\s*__import__\s*\(\s*['"]zlib['"]\s*\)\s*\.\s*decompress\s*\(\s*b['"]/i.test(sText) &&
+        /filename\s*=\s*['"][^'"]+['"]/i.test(sText) &&
+        /mode\s*=\s*['"]exec['"]/i.test(sText)) {
+
+        bDetected = true;
+        sName = "Parasite compressor";
+    }
+	
+	// github.com/billythegoat356/Berserker
+    if (/class\s+Berserker\s*\(\s*\)\s*:/i.test(sText) &&
+    /def\s+__init__\s*\(\s*self\s*:\s*object\s*,.*?\)\s*->\s*exec\s*:/i.test(sText) &&
+    /def\s+__decode__\s*\(\s*self\s*,\s*_execute\s*:\s*str\s*\)\s*->\s*exec\s*:/i.test(sText) &&
+    /'abcdefghijklmnopqrstuvwxyz0123456789'/i.test(sText) &&
+    /Berserker\s*\(.*?,_sparkle\s*=\s*'''/i.test(sText)) {
+
+    bDetected = true;
+    sName = "Berserker Obfuscator";
+	}
+	
+    // Python Marshal
+    if ((/import\s+marshal\b/.test(sText) ||
+         /from\s+marshal\s+import\b/.test(sText)) &&
+        /marshal\s*\.\s*loads\s*\(\s*b['"]/i.test(sText) &&
+        /exec\s*\(\s*marshal\s*\.\s*loads\s*\(/i.test(sText)) {
+
+        bDetected = true;
+        sName = "Python Marshal";
+    }
+	
+	// Python Base64
+    if (/import\s+base64\b/i.test(sText) &&
+        /exec\s*\(\s*base64\s*\.\s*b64decode\s*\(\s*(?:b['"]|['"])/i.test(sText)) {
+
+        bDetected = true;
+        sName = "Python Base64";
+    }
+
+    // Python Base64 + Marshal
+    if (/import\s+base64\b/i.test(sText) &&
+        /import\s+marshal\b/i.test(sText) &&
+        /exec\s*\(\s*marshal\s*\.\s*loads\s*\(\s*base64\s*\.\s*b64decode\s*\(/i.test(sText)) {
+
+        bDetected = true;
+        sName = "Python Base64 + Marshal";
+    }
+
+    // Python Base64 + Zlib + Marshal
+    if (/import\s+base64\b/i.test(sText) &&
+        /import\s+zlib\b/i.test(sText) &&
+        /import\s+marshal\b/i.test(sText) &&
+        /exec\s*\(\s*marshal\s*\.\s*loads\s*\(\s*zlib\s*\.\s*decompress\s*\(\s*base64\s*\.\s*b64decode\s*\(/i.test(sText)) {
+
+        bDetected = true;
+        sName = "Python Base64 + Zlib + Marshal";
+    }
+	
+    sLang = "Python";
+	
+    return result();
+}

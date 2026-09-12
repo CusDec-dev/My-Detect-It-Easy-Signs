@@ -1,0 +1,33 @@
+// Detect It Easy: detection rule file
+// Author: overducast, root
+
+meta("malware", "WebRAT");
+
+function detect() {
+    var patterns = [
+        "salat",
+        "main.decryptDataEdge",
+        "main.decryptDataBrave",
+        "main.startKeylogger",
+        "main.stopKeylogger",
+        "main.runKeylogger",
+        "main.Steal"
+    ];
+
+    var nSize = PE.getSize();
+    var nCount = 0;
+
+    for (var i = 0; i < patterns.length; i++) {
+        if (PE.isSignaturePresent(0x00, nSize, "'" + patterns[i] + "'")) {
+            nCount++;
+        }
+    }
+
+    if (nCount >= 5) {
+        bDetected = true;
+        sVersion = nCount + "/7";
+        sOptions = "SalatStealer";
+    }
+
+    return result();
+}
